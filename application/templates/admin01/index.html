@@ -1,0 +1,100 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>{% translate 'Recent actions' %}</h2>
+        <h3>{% translate 'My actions' %}</h3>
+            {% load log %}
+            {% get_admin_log 10 as admin_log for_user user %}
+            {% if not admin_log %}
+            <p>{% translate 'None available' %}</p>
+            {% else %}
+            <ul class="actionlist">
+            {% for entry in admin_log %}
+            <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+                <span class="visually-hidden">{% if entry.is_addition %}{% translate 'Added:' %}{% elif entry.is_change %}{% translate 'Changed:' %}{% elif entry.is_deletion %}{% translate 'Deleted:' %}{% endif %}</span>
+                {% if entry.is_deletion or not entry.get_admin_url %}
+                    {{ entry.object_repr }}
+                {% else %}
+                    <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                {% endif %}
+                <br>
+                {% if entry.content_type %}
+                    <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+                {% else %}
+                    <span class="mini quiet">{% translate 'Unknown content' %}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Welcome to the Admin Dashboard</h1>
+    <div class="tiles">
+        <div class="tile">
+            <h2>{{ user_count }}</h2>
+            <p>Users</p>
+        </div>
+        <div class="tile">
+            <h2>{{ vehicle_count }}</h2>
+            <p>Vehicles</p>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="vehicleChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Static data for the graph
+    const vehicleCountPerUser = {{ vehicle_count_per_user|safe }};
+    
+    const ctx = document.getElementById('vehicleChart').getContext('2d');
+    const vehicleChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: vehicleCountPerUser.map((_, index) => 'User ' + (index + 1)),
+            datasets: [{
+                label: 'Number of Vehicles per User',
+                data: vehicleCountPerUser,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

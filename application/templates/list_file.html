@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File List</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0; /* Plain background color */
+            font-family: Arial, sans-serif;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 1px solid green;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        h2 {
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .content-container {
+            text-align: center;
+            width: 90%;
+            max-width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .select-row input {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        a, button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        a:hover, button:enabled:hover {
+            background-color: #0056b3;
+        }
+
+        #cancelButton {
+            background-color: #ff0000;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+    <script>
+        // Automatically hide the message after 5 seconds
+        setTimeout(() => {
+            const messageDiv = document.getElementById('message');
+            if (messageDiv) {
+                messageDiv.style.display = 'none';
+            }
+        }, 5000); // 5000ms = 5 seconds
+
+        function toggleSendButton() {
+            const checkboxes = document.querySelectorAll('.select-row input[type="radio"]');
+            const sendButton = document.getElementById('sendUpdate');
+            let isSelected = false;
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    isSelected = true;
+                }
+            });
+
+            sendButton.disabled = !isSelected;
+        }
+        function sendFile() {
+            const selectedFile = document.querySelector('input[name="selected_file"]:checked');
+            if (selectedFile) {
+                const fileId = selectedFile.value;
+                fetch(`/send-file/${fileId}/`, {
+                    method: 'GET',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('File sent successfully!');
+                    } else {
+                        alert('Failed to send the file.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+        function togglCancelButton() {
+            const checkboxes = document.querySelectorAll('.select-row input[type="radio"]');
+            const sendButton = document.getElementById('cancelButton');
+            let isSelected = false;
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    isSelected = true;
+                }
+            });
+
+            sendButton.disabled = isSelected;
+        }
+    </script>
+</head>
+<body>
+    {% if messages %}
+    <div id="message" class="message">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <h2>List of Files</h2>
+
+    <div class="content-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Serial No.</th>
+                    <th>File Name</th>
+                    <th>Description</th>
+                    <th>Upload Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td class="select-row">
+                        <input type="radio" name="selected_file" value="{{ file.id }}" onchange="toggleSendButton()">
+                    </td>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ file.file_name }}</td>
+                    <td>{{ file.description }}</td>
+                    <td>{{ file.datetime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px;">
+            <a href="{% url 'upload' %}">Upload Another File</a>
+            <button id="sendUpdate" disabled onclick="sendFile()">Initiate Update</button>
+            <button id="cancelButton" onClick="window.location.reload();">Cancel</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<div class="tiles">
+    <div class="tile">
+        <h2>{{ user_count }}</h2>
+        <p>Users</p>
+    </div>
+    <div class="tile">
+        <h2>{{ vehicle_count }}</h2>
+        <p>Vehicles</p>
+    </div>
+</div>
+
+<div class="chart-container">
+    <canvas id="vehicleChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const vehicleCountPerUser = {{ vehicle_count_per_user|safe }};
+    const ctx = document.getElementById('vehicleChart').getContext('2d');
+    const vehicleChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: vehicleCountPerUser.map((_, index) => 'User ' + (index + 1)),
+            datasets: [{
+                label: 'Number of Vehicles per User',
+                data: vehicleCountPerUser,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
