@@ -1,41 +1,40 @@
 from django.shortcuts import render
-from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Count
 from .models import Client, Vehicle_detail
 
-# Dashboard View with Static Data
+# Dashboard View with Updated Data
 def user_home(request):
 
-    user_count = Client.objects.count()  #10 
-    vehicle_count = Vehicle_detail.objects.count()  #25  
+    user_count = Client.objects.count()  # Total number of users
+    vehicle_count = Vehicle_detail.objects.count()  # Total number of vehicles
 
-    vehicle_count_per_user = []
-        #client.vehicles.count() for client in Client.objects.all()
-    
-    #[3, 5, 1, 2, 4, 1, 3, 2, 3, 4]  # Number of vehicles per user
+    same_person_multiple_vehicles_data = (
+        Client.objects
+        .values('first_name', 'last_name')
+        .annotate(vehicle_count=Count('vehicle_sign', distinct=True))
+        .filter(vehicle_count__gt=1)  # Filter only clients with more than 1 vehicle
+    )
 
-    for client in Client.objects.all():
-        count = Vehicle_detail.objects.filter(vehicle_sign=client.vehicle_sign).count()
-        vehicle_count_per_user.append(count)
+    # Collect data for the graph
+    client_names = [f"{item['first_name']} {item['last_name']}" for item in same_person_multiple_vehicles_data]
+    vehicle_counts = [item['vehicle_count'] for item in same_person_multiple_vehicles_data]
+
+    # Aggregate vehicle type counts
+    vehicle_type_data = (
+        Vehicle_detail.objects
+        .values('vehicle_type')
+        .annotate(count=Count('id'))
+    )
+    vehicle_type_labels = [item['vehicle_type'] for item in vehicle_type_data]
+    vehicle_type_counts = [item['count'] for item in vehicle_type_data]
 
     context = {
         'user_count': user_count,
         'vehicle_count': vehicle_count,
-        'vehicle_count_per_user': vehicle_count_per_user,
+        'client_names': client_names,  # Names for the graph's X-axis
+        'vehicle_counts': vehicle_counts,  # Number of vehicles for Y-axis
+        'vehicle_type_labels': vehicle_type_labels,  # Vehicle types for second graph
+        'vehicle_type_counts': vehicle_type_counts,  # Counts for second graph
     }
 
     return render(request, 'dashboard.html', context)
-
-
-# @staff_member_required  # Ensures only admin users can access
-# def admin_dashboard(request):
-#     # Static data (replace with dynamic queries if needed)
-#     user_count = 10  # Example count
-#     vehicle_count = 25
-#     vehicle_count_per_user = [3, 5, 1, 2, 4, 1, 3, 2, 3, 4]
-
-#     context = {
-#         'user_count': user_count,
-#         'vehicle_count': vehicle_count,
-#         'vehicle_count_per_user': vehicle_count_per_user,
-#     }
-#     return render(request, 'admin01/dashboard.html', context)
