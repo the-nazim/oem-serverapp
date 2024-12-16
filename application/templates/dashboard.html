@@ -1,104 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 0;
-        }
+{% extends "admin/base_site.html" %}
 
-        .container {
-            width: 80%;
-            margin: 0 auto;
-        }
+{% block content %}
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        /* height: 100vh; Full page height */
+        text-align: center;
+        margin-left: 18%;
+    }
+    .tiles {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin: 20px 0;
+    }
+    .tile {
+        text-align: center;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 150px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .charts-container {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 30px;
+    }
+    .chart-container {
+        width: 45%;
+    }
+</style>
 
-        .tiles {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-        }
+<div class="dashboard-container">
+    <h1>Client-Vehicles Dashboard</h1>
 
-        .tile {
-            background-color: #4be8ee;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 30%;
-        }
-
-        .tile h2 {
-            margin: 0;
-            font-size: 36px;
-            color: #333;
-        }
-
-        .tile p {
-            margin: 10px 0 0;
-            color: #777;
-        }
-
-        .chart-container {
-            margin-top: 50px;
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        canvas {
-            width: 100%;
-            height: 400px;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <!-- Tiles showing number of users and vehicles -->
-        <div class="tiles">
-            <div class="tile">
-                <h2>{{ user_count }}</h2>
-                <p>Users</p>
-            </div>
-            <div class="tile">
-                <h2>{{ vehicle_count }}</h2>
-                <p>Vehicles</p>
-            </div>
+    <div class="tiles">
+        <div class="tile">
+            <h2>{{ user_count }}</h2>
+            <p>Total Users</p>
         </div>
-
-        <!-- Graph or chart below the tiles -->
-        <div class="chart-container">
-            <canvas id="vehicleChart"></canvas>
+        <div class="tile">
+            <h2>{{ vehicle_count }}</h2>
+            <p>Total Vehicles</p>
         </div>
     </div>
 
-    <script>
-        // Static data for the graph
-        const vehicleCountPerUser = {{ vehicle_count_per_user|safe }};
-        
-        // Set up the chart.js chart
-        const ctx = document.getElementById('vehicleChart').getContext('2d');
-        const vehicleChart = new Chart(ctx, {
-            type: 'bar',
+    <div class="charts-container">
+        <div class="chart-container">
+            <h2>Graph: Clients with Multiple Vehicles</h2>
+            <canvas id="multipleVehiclesChart" width="400" height="400"></canvas>
+        </div>
+        <div class="chart-container">
+            <h2>Graph: Vehicle Type Distribution</h2>
+            <canvas id="vehicleTypeChart" width="400" height="400"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Data for the first graph (Clients with Multiple Vehicles)
+        const clientNames = {{ client_names|safe }};
+        const vehicleCounts = {{ vehicle_counts|safe }};
+
+        const ctx1 = document.getElementById('multipleVehiclesChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar', // Bar chart for better clarity
             data: {
-                labels: vehicleCountPerUser.map((_, index) => 'User ' + (index + 1)),
+                labels: clientNames,
                 datasets: [{
-                    label: 'Number of Vehicles per User',
-                    data: vehicleCountPerUser,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    label: 'Number of Vehicles',
+                    data: vehicleCounts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
+                plugins: {
+                    legend: {
+                        display: false // No legend needed for this graph
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true
@@ -106,7 +95,40 @@
                 }
             }
         });
-    </script>
 
-</body>
-</html>
+        // Data for the second graph (Vehicle Type Distribution)
+        const vehicleTypeLabels = {{ vehicle_type_labels|safe }};
+        const vehicleTypeCounts = {{ vehicle_type_counts|safe }};
+
+        const ctx2 = document.getElementById('vehicleTypeChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie', // Pie chart for distribution
+            data: {
+                labels: vehicleTypeLabels,
+                datasets: [{
+                    label: 'Vehicle Types',
+                    data: vehicleTypeCounts,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
+                    ],
+                    borderColor: 'rgba(0, 0, 0, 0.1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
